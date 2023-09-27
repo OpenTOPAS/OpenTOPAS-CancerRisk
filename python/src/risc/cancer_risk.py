@@ -58,14 +58,15 @@ def run_TsRiskModelWrapper():
     patient = 'TestPatient'
     cancerModel = 'sarcoma'
     sex = 'm'
-    parameterSet = 'BEIR'
+    parameterSet = 'BEIRVII'
+    # parameterSet = 'Schneider'
     organAtRisk = 'liver'
     ageAtExposure = 30
     attainedAge = 30
     numberOfFractions = 20
     dvhFile = '/Users/isaacmeyer/research/secondary_risk/topas_use_dvh_risk/DoseAtPhantom_VolHist.csv'
 
-    SEERDirectory = '/Users/isaacmeyer/topas_extensions/CancerRisk/lib/'
+    SEERDirectory = '/Users/isaacmeyer/topas_extensions/TOPAS-CancerRisk/data/'
     TsRiskModelWrapper(patient, cancerModel, sex, parameterSet, 
                        organAtRisk, ageAtExposure, SEERDirectory,
                        attainedAge, numberOfFractions, dvhFile)

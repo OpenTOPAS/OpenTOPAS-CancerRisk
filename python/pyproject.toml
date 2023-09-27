@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "risc"
-version = "0.0.0"
+version = "1.0.0"
 authors = [
   { name="Isaac Meyer", email="imeyer@mgh.harvard.edu" },
 ]
@@ -16,5 +16,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/icmeyer/TOPAS-CancerRisk"
-"Bug Tracker" = "https://github.com/icmeyer/TOPAS-CancerRisk"
+"Homepage" = "https://github.com/mghro/TOPAS-CancerRisk"
+"Bug Tracker" = "https://github.com/mghro/TOPAS-CancerRisk"

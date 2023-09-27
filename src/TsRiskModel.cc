@@ -1,12 +1,14 @@
 // Outcome Model for CancerRisk
 #include "TsRiskModel.hh"
 #include "TsParameterManager.hh"
-#include "CancerRiskTools.hh"
+#include "MeshGeomTools.hh"
 
 #include "G4Integrator.hh"
 #include <math.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <map>
 
 using namespace std;
 
@@ -16,7 +18,6 @@ TsRiskModel::TsRiskModel(TsParameterManager* pm, G4String parmName) : TsVOutcome
 	fCancerModel = "carcinoma";
 	fPatient = "Patient1";
 	// Parameters used to fit the models
-	fParAttainedAge = 70;	// Years
 	fLatency = 5; 	// Years
 	fDDREF = 1.0;	// Dose and dose-rate effectiveness ratio
 	ResolveParameters();
@@ -33,7 +34,6 @@ TsRiskModel::TsRiskModel(G4String patient, G4String cancerModel, G4String sex, G
            fAttainedAge(attainedAge), fNumberOfFractions(numberOfFractions)
 {
     G4cout << "Constructing risk model " <<  G4endl;
-	fParAttainedAge = 70;	// Years
 	fLatency = 5; 	// Years
 	fDDREF = 1.0;	// Dose and dose-rate effectiveness ratio
     G4cout << "Patient: " << fPatient << G4endl;
@@ -188,25 +188,22 @@ std::vector<G4double> TsRiskModel::LARBasedOnEAR(G4double OED)
 	vector<G4double> vEAR, vLARear, vLARearCum, vAge, Sa, SaOrgan;
 	G4double JobEAR5, JobEAR10, JobEAR15, JobEAR50, JobEAR70;
 	G4double LARabs = 0.0;
-	G4double S;
 	if (fSex == "female")
 	{
 		Sa = SaFemale;
 		SaOrgan = SaOrganFemale;
-		S = 0.17;
 	}
 	if (fSex == "male")
 	{
 		Sa = SaMale;
 		SaOrgan = SaOrganMale;
-		S = -0.17;
 	}
 	G4double eStar = 0;
 	if (fAgeAtExposure < 30) eStar = fAgeAtExposure - 30;
 	if (fOrganAtRisk == "thyroid" || fOrganAtRisk == "breast") eStar = fAgeAtExposure;
 	for (G4int age = fAgeAtExposure + fLatency; age <= fAttainedAge + fLatency; age++)
 	{
-		G4double EAR = OED * fBetaEAR * exp(fGamma_e_EAR * eStar + fGamma_a_EAR * log((G4double)age/(G4double)fParAttainedAge)) * (1 + S);
+		G4double EAR = OED * fBetaEAR * exp(fGamma_e_EAR * eStar + fGamma_a_EAR * log((G4double)age/(G4double)fParAttainedAge));
 		G4double LARe = EAR * Sa[age] / Sa[fAgeAtExposure];
 		LARabs += LARe;
 		vAge.push_back(age);
@@ -368,8 +365,7 @@ void TsRiskModel::ReadLifetimeRiskTable()
 
 void TsRiskModel::ReadDVHcsv(G4String dvhFile)
 {
-    // CancerRiskTools::readCSV<G4double, G4double>(dvhFile, DVHDose, DVHVolume);
-    CancerRiskTools::readCSV(dvhFile, DVHDose, DVHVolume);
+    MeshGeomTools::readCSV(dvhFile, DVHDose, DVHVolume);
 }
 
 void TsRiskModel::ReadSEEROrganSpecificTable(G4String organ)
@@ -437,93 +433,76 @@ void TsRiskModel::ReadSEEROrganSpecificTable(G4String organ)
 
 void TsRiskModel::SetOrganSpecificParameters()
 {
-	if (fOrganAtRisk == "lung") {
-		fAlpha = 0.042;
-		fAlphaBeta = 3;
-		fRepopulationFactor = 0.83;
-		if (fSex == "female")
-		{
-			fBetaERR = 1.4;
-			fBetaEAR = 8.0; // Schneider
-			if (fParameterSet == "BEIR") { fBetaEAR = 3.4; }
-		}
-		if (fSex == "male")
-		{
-			fBetaERR = 0.32;
-			fBetaEAR = 2.3;
-		}
-		fGamma_e_ERR = -0.03;
-		fGamma_a_ERR = -1.4;
-		fGamma_e_EAR = 0.002; // Schneider
-		fGamma_a_EAR = 4.23; // Schneider
-		if (fParameterSet == "BEIR")
-		{
-			fGamma_e_EAR = -0.041;
-			fGamma_a_EAR = 5.2;
-		}
-	}
-	else if (fOrganAtRisk == "breast") {
-		fAlpha = 0.044;
-		fAlphaBeta = 3;
-		fRepopulationFactor = 0.15;
-		fBetaERR = 0.51;
-		fBetaEAR = 8.2; // Schneider
-		if (fParameterSet == "BEIR") { fBetaEAR = 9.4; }
-		fGamma_e_ERR = 0.0;
-		fGamma_a_ERR = -2.0;
-		fGamma_e_EAR = -0.037; // Schneider
-		fGamma_a_EAR = 1.7; // Schneider
-		if (fParameterSet == "BEIR")
-		{
-			fGamma_e_EAR = -0.041;
-			if (fAttainedAge < 50) fGamma_a_EAR = 3.5;
-			if (fAttainedAge >= 50) fGamma_a_EAR = 1.1;
-		}
-	}
-	else if (fOrganAtRisk == "esophagus" || fOrganAtRisk == "stomach") {
-		fAlpha = 0.026;
-		fAlphaBeta = 3;
-		fRepopulationFactor = 0.81;
-		if (fSex == "female")
-		{
-			fBetaERR = 0.48;
-			fBetaEAR = 0.58; // Santos
-			if (fParameterSet == "BEIR") { fBetaEAR = 4.9; }
-		}
-		if (fSex == "male")
-		{
-			fBetaERR = 0.32;
-			fBetaEAR = 4.9;
-		}
-		fGamma_e_ERR = -0.03;
-		fGamma_a_ERR = -1.4;
-		fGamma_e_EAR = -0.002; // Schneider
-		fGamma_a_EAR = 1.9; // Schneider
-		if (fParameterSet == "BEIR")
-		{
-			fGamma_e_EAR = -0.041;
-			fGamma_a_EAR = 2.8;
-		}
-	}
-	else if (fOrganAtRisk == "thyroid") {
-		fAlpha = 0.087;
-		fAlphaBeta = 3;
-		fRepopulationFactor = 0.23;
-		if (fSex == "female")
-		{
-			fBetaERR = 1.05;
-			fBetaEAR = 0.4; // Schneider
-		}
-		if (fSex == "male")
-		{
-			fBetaERR = 0.53;
-			fBetaEAR = 0.4;
-		}
-		fGamma_e_ERR = -0.083;
-		fGamma_a_ERR = 0.0;
-		fGamma_e_EAR = -0.046; // Schneider
-		fGamma_a_EAR = 0.6; // Schneider
-	}
+    // Sets fAlpha, fAlphaBeta, fBetaERR, fBetaEAR, fGamma_e_ERR, fGamma_e_EAR, fGamma_a_ERR, fGamma_e_EAR,
+    // fRepopulationFactor
+    // Based on fSex, fAge, fOrganAtRisk
+
+    // Open the input file
+	G4String parameterFile;
+    parameterFile = fSEERDirector + fParameterSet + ".txt";
+    std::ifstream inputFile(parameterFile);
+    
+    if (!inputFile.is_open()) {
+		G4cerr << "Could not open parameter table, no file: " << parameterFile << G4endl;
+        exit(1);
+    }
+
+    // skip headers
+    std::string line;
+    while (std::getline(inputFile, line)) {
+        if (line[0] != '#'){break;}
+    }
+    
+    // Get column names
+    std::string token;
+    std::vector<std::string> column_names;
+    std::stringstream linestream(line);
+    while (linestream >> token) {
+        column_names.push_back(token);
+    }
+
+    // Get rows
+    int col_n = 0;
+    int row_n = 0;
+    std::map<G4String, G4String> row;
+    while (std::getline(inputFile, line)) {
+        std::stringstream ss(line);
+        col_n = 0;
+        while (ss >> token) {
+            row[column_names[col_n]] = token;
+            col_n++;
+        }
+        if (row["SEER_name"] == fOrganAtRisk) {break;}
+        row_n++;
+        if (row_n > (column_names.size() - 1)){
+            G4cerr << "Organ: " << fOrganAtRisk << " not available in parameter file: " << parameterFile << G4endl;
+            exit(1);
+        }
+    }
+    // Close the input file
+    inputFile.close();
+
+    fAlpha              = GetMapDouble(row, "Alpha");
+    fAlphaBeta          = GetMapDouble(row, "AlphaBeta");
+    fRepopulationFactor = GetMapDouble(row, "RepopulationFactor");
+    fRepopulationFactor = GetMapDouble(row, "RepopulationFactor");
+    fParAttainedAge = GetMapDouble(row, "Attained_Age_Ref");
+    if (fSex == "male"){
+        fBetaERR            = GetMapDouble(row, "Beta_ERR_M");
+        fBetaEAR            = GetMapDouble(row, "Beta_EAR_M");
+    }
+    else if (fSex == "female"){
+        fBetaERR            = GetMapDouble(row, "Beta_ERR_F");
+        fBetaEAR            = GetMapDouble(row, "Beta_EAR_F");
+    }
+    fGamma_e_ERR        = GetMapDouble(row, "Gamma_e_ERR");
+    fGamma_e_EAR        = GetMapDouble(row, "Gamma_e_EAR");
+    fGamma_a_ERR        = GetMapDouble(row, "Gamma_a_ERR");
+    fGamma_a_EAR        = GetMapDouble(row, "Gamma_a_EAR");
+}
+
+G4double TsRiskModel::GetMapDouble(std::map<G4String, G4String> &table, G4String key){
+    return (G4double) std::stod(table[key]);
 }
 
 void TsRiskModel::WriteOutputFile(G4String fileName, vector<vector<G4double>> quantitiesToWrite, vector<G4String> headers)

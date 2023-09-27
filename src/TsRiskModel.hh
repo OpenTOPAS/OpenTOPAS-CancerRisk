@@ -6,7 +6,6 @@
 #include "TsVOutcomeModel.hh"
 #include <vector>
 
-// To implement as a TOPAS class
 class TsRiskModel : public TsVOutcomeModel
 {
 public:
@@ -26,6 +25,7 @@ public:
 	G4double AverageLAReAndLARa(std::vector<G4double> LARERRCum, std::vector<G4double> LAREARCum);
 	G4double GetOEDSarcomaModel(std::vector<G4double> dose, std::vector<G4double> volume);
 	G4double GetOEDCarcinomaModel(std::vector<G4double> dose, std::vector<G4double> volume);
+	G4double GetMapDouble(std::map<G4String, G4String> &table, G4String key);
 	void ReadLifetimeRiskTable();
 	void ReadDVHcsv(G4String dvhFile);
 	void ReadSEEROrganSpecificTable(G4String organ);
