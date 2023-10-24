@@ -41,7 +41,7 @@ TsRiskModel::TsRiskModel(G4String patient, G4String cancerModel, G4String sex, G
     G4cout << "OrganAtRisk: " << fOrganAtRisk << G4endl;
 
     // Warnings for incorrect input
-	if (fParameterSet != "BEIR" && fParameterSet != "Schneider")
+	if (fParameterSet != "BEIRVII" && fParameterSet != "Schneider")
 	{
 		G4cout << "Parameter set not specified or not recognized. Schneider parameter set will be used." << G4endl;
 	}
@@ -58,7 +58,6 @@ TsRiskModel::TsRiskModel(G4String patient, G4String cancerModel, G4String sex, G
 	ReadLifetimeRiskTable();
 	ReadSEEROrganSpecificTable(fOrganAtRisk);
 	ReadDVHcsv(dvhFile);
-    // TODO: check expected format of dose and volume inputs
     G4double value = Initialize(DVHDose, DVHVolume);
     G4cout << "    Probability: " << value << " %" << G4endl;
 }
@@ -70,7 +69,7 @@ void TsRiskModel::ResolveParameters()
 	fSEERDirectory = fPm->GetStringParameter("Sc/CancerRisk/DataDirectory");
 	if (*fSEERDirectory.rbegin() != '/') fSEERDirectory += "/";
 	fParameterSet = fPm->GetStringParameter(GetFullParmName(fModelName, "ParameterSet"));
-	if (fParameterSet != "BEIR" && fParameterSet != "Schneider")
+	if (fParameterSet != "BEIRVII" && fParameterSet != "Schneider")
 	{
 		G4cout << "Parameter set not specified or not recognized. Schneider parameter set will be used." << G4endl;
 	}
@@ -135,26 +134,23 @@ std::vector<G4double> TsRiskModel::LARBasedOnERR(G4double OED)
 {
 	vector<G4double> vLARerr, vLARerrCum, vERR, vAge, Sa, SaOrgan;
 	G4double JobERR5, JobERR10, JobERR15, JobERR50, JobERR70;
-	G4double S;
 	G4double LARExcess = 0.0;
 	if (fSex == "female")
 	{
 		Sa = SaFemale;
 		SaOrgan = SaOrganFemale;
-		S = 0.17;
 	}
 	if (fSex == "male")
 	{
 		Sa = SaMale;
 		SaOrgan = SaOrganMale;
-		S = -0.17;
 	}
 	G4double eStar = 0;
 	if (fAgeAtExposure < 30) eStar = fAgeAtExposure - 30;
 	if (fOrganAtRisk == "thyroid" || fOrganAtRisk == "breast") eStar = fAgeAtExposure;
 	for (G4int age = fAgeAtExposure + fLatency; age <= fAttainedAge + fLatency; age++)
 	{
-		G4double ERR = OED * fBetaERR * exp(fGamma_e_ERR * eStar + fGamma_a_ERR * log((G4double)age/(G4double)fParAttainedAge)) * (1 + S);
+		G4double ERR = OED * fBetaERR * exp(fGamma_e_ERR * eStar + fGamma_a_ERR * log((G4double)age/(G4double)fParAttainedAge));
 		G4double LARe = ERR * Sa[age] / Sa[fAgeAtExposure] * SaOrgan[age];
 		vAge.push_back(age);
 		vLARerr.push_back(LARe / 1000);
@@ -240,7 +236,7 @@ G4double TsRiskModel::AverageLAReAndLARa(std::vector<G4double> LARERRCum, std::v
 	vector<G4double> vLARavg, vAge;
 	G4double JobLAR5, JobLAR10, JobLAR15, JobLAR50, JobLAR70, LARAttainedAge;
 	for (G4int age = fAgeAtExposure + fLatency; age <= fAttainedAge + fLatency; age++)	{ vAge.push_back(age); }
-	if (fParameterSet == "BEIR")
+	if (fParameterSet == "BEIRVII")
 	{
 		if (fOrganAtRisk == "breast" || fOrganAtRisk == "bone_marrow") wERR = 0.0;
 		else if (fOrganAtRisk == "thyroid" || fOrganAtRisk == "skin") wERR = 1.0;
@@ -370,43 +366,31 @@ void TsRiskModel::ReadDVHcsv(G4String dvhFile)
 
 void TsRiskModel::ReadSEEROrganSpecificTable(G4String organ)
 {
-	// List of available organs
-	vector<G4String> availableOrgans;
-	availableOrgans.push_back("brain");
-	availableOrgans.push_back("breast");
-	availableOrgans.push_back("colonrectum");
-	availableOrgans.push_back("esophagus");
-	availableOrgans.push_back("kidneys");
-	availableOrgans.push_back("larynx");
-	availableOrgans.push_back("liver");
-	availableOrgans.push_back("lung");
-	availableOrgans.push_back("lungbronchus");
-	availableOrgans.push_back("pancreas");
-	availableOrgans.push_back("pharynx");
-	availableOrgans.push_back("prostateovary");
-	availableOrgans.push_back("stomach");
-	availableOrgans.push_back("testesuterus");
-	availableOrgans.push_back("thyroid");
-	availableOrgans.push_back("urinarybladder");
-
-	// Check if specified organ is in the list
-	if (std::find(std::begin(availableOrgans), std::end(availableOrgans), organ) == std::end(availableOrgans))
-	{
-		G4cerr << "Topas is exiting due to a serious error in scoring setup." << G4endl;
-		G4cerr << "There is not specific data for the specified organ (" + organ + ")." << G4endl;
-		G4cerr << "Please use one of the following names for your OAR: " << G4endl;
-		for (G4int i = 0; i < availableOrgans.size() - 1; i++)
-		{
-			G4cerr << availableOrgans[i] << ",";
-		}
-		G4cerr << availableOrgans[availableOrgans.size()-1] << "." << G4endl;
-		exit(1);
-	}
-
 	SaOrganMale.clear();
 	SaOrganFemale.clear();
 
-	G4String fileName = fSEERDirectory + "SEER_" + organ + ".csv";
+    // Convert sex specific organs to unisex SEER names
+    std::map<G4String, G4String> lookup;
+    lookup["brain"] = "brain";
+    lookup["breast"] = "breast";
+    lookup["colonrectum"] = "colonrectum";
+    lookup["esophagus"] = "esophagus";
+    lookup["kidneys"] = "kidneys";
+    lookup["larynx"] = "larynx";
+    lookup["liver"] = "liver";
+    lookup["lung"] = "lung";
+    lookup["lungbronchus"] = "lungbronchus";
+    lookup["pancreas"] = "pancreas";
+    lookup["pharynx"] = "pharynx";
+    lookup["ovary"] = "prostateovary";
+    lookup["prostate"] = "prostateovary";
+    lookup["stomach"] = "stomach";
+    lookup["testes"] = "testesuterus";
+    lookup["uterus"] = "testesuterus";
+    lookup["thyroid"] = "thyroid";
+    lookup["urinarybladder"] = "urinarybladder";
+
+	G4String fileName = fSEERDirectory + "SEER_" + lookup[organ] + ".csv";
 
 	fstream f;
 	f.open(fileName, ios::in);
@@ -439,7 +423,12 @@ void TsRiskModel::SetOrganSpecificParameters()
 
     // Open the input file
 	G4String parameterFile;
-    parameterFile = fSEERDirector + fParameterSet + ".txt";
+    if (fParameterSet == "BEIRVII"){
+        parameterFile = fSEERDirectory + fParameterSet + "_repopulation.txt";
+    }
+    else {
+        parameterFile = fSEERDirectory + fParameterSet + ".txt";
+    }
     std::ifstream inputFile(parameterFile);
     
     if (!inputFile.is_open()) {
@@ -486,19 +475,19 @@ void TsRiskModel::SetOrganSpecificParameters()
     fAlphaBeta          = GetMapDouble(row, "AlphaBeta");
     fRepopulationFactor = GetMapDouble(row, "RepopulationFactor");
     fRepopulationFactor = GetMapDouble(row, "RepopulationFactor");
-    fParAttainedAge = GetMapDouble(row, "Attained_Age_Ref");
+    fParAttainedAge     = GetMapDouble(row, "Attained_Age_Ref");
     if (fSex == "male"){
-        fBetaERR            = GetMapDouble(row, "Beta_ERR_M");
-        fBetaEAR            = GetMapDouble(row, "Beta_EAR_M");
+        fBetaERR = GetMapDouble(row, "Beta_ERR_M");
+        fBetaEAR = GetMapDouble(row, "Beta_EAR_M");
     }
     else if (fSex == "female"){
-        fBetaERR            = GetMapDouble(row, "Beta_ERR_F");
-        fBetaEAR            = GetMapDouble(row, "Beta_EAR_F");
+        fBetaERR = GetMapDouble(row, "Beta_ERR_F");
+        fBetaEAR = GetMapDouble(row, "Beta_EAR_F");
     }
-    fGamma_e_ERR        = GetMapDouble(row, "Gamma_e_ERR");
-    fGamma_e_EAR        = GetMapDouble(row, "Gamma_e_EAR");
-    fGamma_a_ERR        = GetMapDouble(row, "Gamma_a_ERR");
-    fGamma_a_EAR        = GetMapDouble(row, "Gamma_a_EAR");
+    fGamma_e_ERR = GetMapDouble(row, "Gamma_e_ERR");
+    fGamma_e_EAR = GetMapDouble(row, "Gamma_e_EAR");
+    fGamma_a_ERR = GetMapDouble(row, "Gamma_a_ERR");
+    fGamma_a_EAR = GetMapDouble(row, "Gamma_a_EAR");
 }
 
 G4double TsRiskModel::GetMapDouble(std::map<G4String, G4String> &table, G4String key){
