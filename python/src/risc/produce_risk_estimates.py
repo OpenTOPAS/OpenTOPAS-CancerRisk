@@ -30,6 +30,7 @@ def run_risk_model(resultsdir, patient_info, risk_parameters, SEER_dir, dvhFile)
 def process_directory_with_parameters(resultsdir, dvh_dir, patient_info, 
                                       risk_parameters, exclude_organs, 
                                       SEER_dir):
+    dvh_dir = os.path.join(dvh_dir, '')
     os.system('mkdir -p {:s}'.format(resultsdir))
     os.chdir(resultsdir)
 

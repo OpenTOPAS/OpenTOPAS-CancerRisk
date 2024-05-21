@@ -5,9 +5,11 @@ import os
 import subprocess
 from numpy.ctypeslib import ndpointer
 
-topas_path = subprocess.check_output(['which', 'topas']).decode('utf-8')
-topas_dir = os.path.dirname(topas_path)
-libpath = topas_dir + '/extensions/libextensions_shared.dylib'
+if 'TOPAS_CANCER_RISK_BUILD_DIR' not in os.environ:
+    print('Please set the TOPAS_CANCER_RISK_BUILD_DIR environment variable')
+    exit(1)
+else:
+    libpath = os.environ['TOPAS_CANCER_RISK_BUILD_DIR'] + '/extensions/libextensions_shared.dylib'
 
 _topaslib = ctypes.cdll.LoadLibrary(libpath)
 
