@@ -12,21 +12,21 @@
 
 class TsFilterByVolume : public TsVFilter
 {
-public:
-	TsFilterByVolume(G4String name, TsParameterManager* pM, TsMaterialManager* mM, TsGeometryManager* gM,
-				     TsFilterManager* fM, TsVGenerator* generator, TsVScorer* scorer, TsVFilter* parentFilter);
-	virtual ~TsFilterByVolume();
+    public:
+        TsFilterByVolume(G4String name, TsParameterManager* pM, TsMaterialManager* mM, TsGeometryManager* gM,
+                TsFilterManager* fM, TsVGenerator* generator, TsVScorer* scorer, TsVFilter* parentFilter);
+        virtual ~TsFilterByVolume();
 
-	void ResolveParameters();
-  	void CacheGeometryPointers();
+        void ResolveParameters();
+        void CacheGeometryPointers();
 
-	virtual G4bool Accept(const G4Step*) const;
-	virtual G4bool AcceptTrack(const G4Track*) const;
+        virtual G4bool Accept(const G4Step*) const;
+        virtual G4bool AcceptTrack(const G4Track*) const;
 
-private:
-	G4String* fNames;
-	G4int fNamesLength;
-	std::vector<G4VSolid*> fSolids;
+    private:
+        G4String* fNames;
+        G4int fNamesLength;
+        std::vector<G4VSolid*> fSolids;
 };
 
 #endif
