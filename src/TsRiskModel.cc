@@ -55,6 +55,7 @@ TsRiskModel::TsRiskModel(G4String patient, G4String cancerModel, G4String sex, G
 		G4cerr << "male, female, m, f, Male, Female, M, F, man, woman, Man, Woman, w or W." << G4endl;
 		exit(1);
 	}
+
 	ReadLifetimeRiskTable();
 	ReadSEEROrganSpecificTable(fOrganAtRisk);
 	ReadDVHcsv(dvhFile);
@@ -97,6 +98,12 @@ G4double TsRiskModel::Initialize(std::vector<G4double> dose, std::vector<G4doubl
 {
 	SetOrganSpecificParameters();
 
+    // If the maximum dose is over 100 Gy, print a warning
+    if (dose[dose.size() - 1] > 100)
+    {
+        G4cerr << "Warning: The maximum dose in the DVH is over 100 Gy. The model may not be accurate." << G4endl;
+    }
+
 	G4String fileName = fOrganAtRisk + "_diffDVH.csv";
 	fstream fout;
 	// Creates a new file, overwritting if exists
@@ -118,10 +125,9 @@ G4double TsRiskModel::Initialize(std::vector<G4double> dose, std::vector<G4doubl
 	G4double avgLAR = AverageLAReAndLARa(LARERRCum, LAREARCum);
 
 	// Write summary output
-	JobHeaders.push_back("DVHFile"); JobHeaders.push_back("MeanDose");
-	JobHeaders.push_back("ERR5"); JobHeaders.push_back("ERR10"); JobHeaders.push_back("ERR15"); JobHeaders.push_back("ERR50"); JobHeaders.push_back("ERR70");
-	JobHeaders.push_back("EAR5"); JobHeaders.push_back("EAR10"); JobHeaders.push_back("EAR15"); JobHeaders.push_back("EAR50"); JobHeaders.push_back("EAR70");
-	JobHeaders.push_back("LAR5"); JobHeaders.push_back("LAR10"); JobHeaders.push_back("LAR15"); JobHeaders.push_back("LAR50"); JobHeaders.push_back("LAR70");
+    JobHeaders = {"DVHFile", "MeanDose", "ERR5", "ERR10", "ERR15", "ERR50", "ERR70",
+                  "EAR5", "EAR10", "EAR15", "EAR50", "EAR70",
+                  "LAR5", "LAR10", "LAR15", "LAR50", "LAR70"};
 
 	G4String outputFileName = fPatient + "_Table_" + fOrganAtRisk + ".csv";
 	WriteOutputFile(outputFileName, JobResults, JobHeaders);
@@ -303,18 +309,24 @@ G4double TsRiskModel::GetOEDCarcinomaModel(std::vector<G4double> dose, std::vect
 	G4double sumVolume = 0;
 	G4double OEDc = 0;
 	G4double meanDose = 0;
+    G4double dvhD, dvhV, alphaPrime, termA, termB, termC, termD, termD1, termD2, termE;
+    G4bool useRepopulation = (fRepopulationFactor != 0);
 	for (G4int i = 0; i < dose.size(); i++)
 	{
-		G4double dvhD = dose[i];
-		G4double dvhV = volume[i];
-		G4double alphaPrime = fAlpha + beta * dvhD / (G4double)fNumberOfFractions;
+		dvhD = dose[i];
+		dvhV = volume[i];
+		alphaPrime = fAlpha + beta * dvhD / (G4double)fNumberOfFractions;
 		sumVolume += dvhV;
 		meanDose += dvhD * dvhV;
-		if (fRepopulationFactor != 0)
-		{
-			OEDc += dvhV * exp(-alphaPrime * dvhD) / (alphaPrime * fRepopulationFactor) * (1 - 2 * fRepopulationFactor +
-					exp(alphaPrime * dvhD) * pow(fRepopulationFactor, 2) - exp(-alphaPrime*fRepopulationFactor/(1-fRepopulationFactor)*dvhD) *
-					pow(1-fRepopulationFactor, 2));
+		if (useRepopulation) {
+            termA = exp(-alphaPrime * dvhD) / (alphaPrime * fRepopulationFactor);
+            termB = 1 - 2 * fRepopulationFactor;
+            termC = exp(alphaPrime * dvhD) * pow(fRepopulationFactor, 2);
+            termD1 = exp(-alphaPrime * fRepopulationFactor * dvhD/(1-fRepopulationFactor));
+            termD2 = pow(1-fRepopulationFactor, 2);
+            termD = termD1 * termD2;
+            termE = alphaPrime * fRepopulationFactor * dvhD;
+            OEDc += dvhV * termA * (termB + termC - termD - termE);
 		}
 		else
 		{
