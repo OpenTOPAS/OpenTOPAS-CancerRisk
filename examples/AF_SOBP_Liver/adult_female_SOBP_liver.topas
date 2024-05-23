@@ -1,0 +1,102 @@
+# World
+d:Ge/World/HLX                          = 1.0 m
+d:Ge/World/HLY                          = 1.0 m
+d:Ge/World/HLZ                          = 1.0 m
+b:Ge/World/Invisible                    = "true"
+s:Ge/World/Material                     = "Vacuum"
+
+# Phantom
+s:Ge/MeshPhantom/Type					= "TsTetGeom"
+s:Ge/MeshPhantom/Parent					= "World"
+s:Ge/MeshPhantom/Material           	= "G4_WATER"
+s:Ge/MeshPhantom/PhantomDirectory		= "/Users/isaacmeyer/data/ICRP_phantoms_145/phantoms"
+s:Ge/MeshPhantom/Age					= "A"
+s:Ge/MeshPhantom/Sex					= "F"
+d:Ge/MeshPhantom/TransX					= 0. m
+d:Ge/MeshPhantom/TransY					= 0. m
+d:Ge/MeshPhantom/TransZ					= 0. m
+d:Ge/MeshPhantom/RotX					= 0. deg
+d:Ge/MeshPhantom/RotY					= 0. deg
+d:Ge/MeshPhantom/RotZ					= 0. deg
+
+# Simplify physics for faster start of this demonstration
+sv:Ph/Default/Modules = 1 "g4em-standard_opt3"
+
+# Source
+# Set a raw SOBP using time features
+s:Tf/Energy/Function		= "Step"
+dv:Tf/Energy/Times			= 5 20 40 60 80 100 ms
+dv:Tf/Energy/Values			= 5 160 155 150 145 140 MeV
+s:Tf/Histories/Function		= "Step"
+dv:Tf/Histories/Times		= 5 20 40 60 80 100 ms
+iv:Tf/Histories/Values		= 5 10 10 10 10 10 
+# iv:Tf/Histories/Values		= 5 10 10 10 10 10
+
+s:So/Example/Type				= "Beam"
+s:So/Example/Component			= "BeamPosition"
+s:So/Example/BeamParticle		= "proton"
+d:So/Example/BeamEnergy			= Tf/Energy/Value MeV
+u:So/Example/BeamEnergySpread	= 0.757504
+s:So/Example/BeamPositionDistribution	= "Flat"
+s:So/Example/BeamPositionCutoffShape	= "Ellipse"
+d:So/Example/BeamPositionCutoffX		= 10. mm
+d:So/Example/BeamPositionCutoffY		= 10. mm
+s:So/Example/BeamAngularDistribution	= "None"
+i:So/Example/NumberOfHistoriesInRun		= Tf/Histories/Value * 1000
+
+d:Ge/BeamPosition/TransX   = -23.65 cm
+d:Ge/BeamPosition/TransY   = 0. cm
+d:Ge/BeamPosition/TransZ   = 30. cm
+#beam in dir +x.
+d:Ge/BeamPosition/RotX     = 0. deg
+d:Ge/BeamPosition/RotY     = -90. deg
+d:Ge/BeamPosition/RotZ     = 0. deg
+
+# Scale factor (#particles? Is dose given per particle?) (to be experimentally determined?)
+u:Sc/ScaleFactor 			= 60000.0
+
+# Parameters for Cancer Risk extension
+s:Sc/CancerRisk/DataDirectory = "../../data/"
+s:Sc/CancerRisk/CancerModel   = "carcinoma"
+s:Sc/CancerRisk/PatientName   = "TestPatient"
+s:Sc/CancerRisk/Sex           = "female"
+i:Sc/CancerRisk/AttainedAge   = 70
+i:Sc/CancerRisk/AgeAtExposure = 35
+i:Sc/CancerRisk/NumberOfFractions = 28
+
+# Scorer: test for stomach
+s:Sc/Liver/Quantity						= "TsTetGeomScorer"
+s:Sc/Liver/Component					= "MeshPhantom"
+sv:Sc/Liver/ICRPMaterials				= 1 "Liver"
+s:Sc/Liver/OutputFile					= "DoseLiver"
+s:Sc/Liver/OutputType					= "csv"
+s:Sc/Liver/IfOutputFileAlreadyExists	= "Overwrite"
+sv:Sc/Liver/Report						= 3 "sum" "differentialvolumehistogram" "count_in_bin"
+i:Sc/Liver/HistogramBins				= 1000
+d:Sc/Liver/HistogramMin					= 0 Gy
+d:Sc/Liver/HistogramMax					= 1E-5 Gy
+u:Sc/Liver/OutcomeOutputScaleFactor		= Sc/ScaleFactor
+sv:Sc/Liver/OutcomeModelName			= 1 "CancerRisk"
+b:Sc/Liver/UseBaseOutput     			= "false"
+b:Sc/Liver/ReportDoseByTet              = "true"
+s:Sc/Liver/CancerRisk/ParameterSet		= "Schneider"
+s:Sc/Liver/CancerRisk/OrganName			= "liver"
+
+# Start
+i:Ts/Seed = 42
+b:Ts/PauseBeforeQuit				= "False"
+i:Tf/NumberOfSequentialTimes	= 5
+d:Tf/TimelineEnd				= 100 ms
+i:Ts/ShowHistoryCountAtInterval	= 10000
+i:Ts/NumberOfThreads = 12
+i:Tf/Verbosity					= 1
+b:Ts/ShowCPUTime				= "True"
+i:Ts/ParameterizationErrorMaxReports = 5
+
+
+#s:Gr/ViewA/Type        = "OpenGL"
+#i:Gr/ViewA/WindowSizeX = 900
+#i:Gr/ViewA/WindowSizeY = 900
+#d:Gr/ViewA/Theta       = 70 deg
+#d:Gr/ViewA/Phi         = 10 deg
+#i:Gr/ShowOnlyOutlineIfVoxelCountExceeds = 1000000
