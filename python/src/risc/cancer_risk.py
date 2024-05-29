@@ -29,7 +29,7 @@ def TsRiskModelWrapper(patient, cancerModel, sex, parameterSet,
     cancerModel = cancerModel.encode('utf-8')
     sex = sex.encode('utf-8')
     parameterSet = parameterSet.encode('utf-8')
-    organAtRisk = organAtRisk.encode('utf-8')
+    organAtRisk = organAtRisk.encode('utf-8').lower()
     SEERDirectory = SEERDirectory.encode('utf-8')
     dvhFile = dvhFile.encode('utf-8')
 
