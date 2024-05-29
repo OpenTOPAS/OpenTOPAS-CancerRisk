@@ -2,9 +2,9 @@
 Repository for code related to Cancer Risk project
 
 Authors:
- - [Isaac Meyer](imeyer@mgh.harvard.edu)
- - [Alejandro Bertolet](abertoletreina@mgh.harvard.edu)
- - [Harald Paganetti](hpaganetti@mgh.harvard.edu)
+ - Isaac Meyer
+ - Alejandro Bertolet
+ - Harald Paganetti
 
 # SEER data
 This extension uses statistics from SEER (Surveillance, Epidemiology and End Results) Program to estimate risks in relation to each organ. This information is included in *cvs* files that are provided with this extension. All these files need to be included in the same directory, and its full path needs to be specified in the parameter file as follows:
@@ -98,4 +98,7 @@ The python wrapper requires generating a TOPAS shared library.
 2. Set the environment variable `$TOPAS_CANCER_RISK_BUILD_DIR`
 3. The python module can be installed by running `pip install -e .` in the `TOPAS-CancerRisk/python` folder
 4. The DVH processing example in `TOPAS-CancerRisk/python/examples/` can be run after running TOPAS on the `example/AF_SOBP_Liver` example
+
+# Issues
+Please use the issues tab on github to report problems or request features
 
