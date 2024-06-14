@@ -42,7 +42,7 @@ For each organ involved it is necessary to add a new scorer, specifying the list
 1. Clone OpenTOPAS repo v4.0.0
    git clone -b v4.0.0 https://github.com/OpenTOPAS/OpenTOPAS
 2. Clone the cancerrisk extension
-   git clone --recurse-submodules https://github.com/OpenTOPAS/TOPAS-CancerRisk
+   git clone --recurse-submodules https://github.com/OpenTOPAS/OpenTOPAS-CancerRisk
 3. Install Geant4v11.1.2 following https://opentopas.github.io/installation.html
 4. Build TOPAS with cmake, possible build script below (change directories as appropriate)
 
@@ -57,7 +57,7 @@ cd $BUILDDIR
 
 export Geant4_DIR=/Applications/geant4-v11.1.2-install
 cmake -DTOPAS_TYPE=public \
-      -DTOPAS_EXTENSIONS_DIR="../../TOPAS-CancerRisk" \
+      -DTOPAS_EXTENSIONS_DIR="../../OpenTOPAS-CancerRisk" \
       -DCMAKE_INSTALL_PREFIX="../topas-install-$FLAVOR" \
       ../
 make -j12 install 
