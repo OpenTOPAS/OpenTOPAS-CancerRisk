@@ -1,3 +1,3 @@
 [submodule "src/TOPAS-MeshGeom"]
-	path = src/TOPAS-MeshGeom
-	url = git@github.com:OpenTOPAS/TOPAS-MeshGeom.git
+	path = src/OpenTOPAS-MeshGeom
+	url = git@github.com:OpenTOPAS/OpenTOPAS-MeshGeom.git
